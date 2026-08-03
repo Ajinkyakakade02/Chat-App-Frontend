@@ -2,7 +2,6 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 let stompClient: Client | null = null;
-const globalListeners: Array<(msg: any) => void> = [];
 
 export const connectWebSocket = (
   userId: string,
@@ -21,10 +20,7 @@ export const connectWebSocket = (
 
       stompClient?.subscribe(`/topic/room-${roomId}`, (message) => {
         const receivedMessage = JSON.parse(message.body);
-        // Notify the specific chat component
         onMessageReceived(receivedMessage);
-        // Notify all global listeners (for unread counts, etc.)
-        globalListeners.forEach((listener) => listener(receivedMessage));
       });
 
       stompClient?.publish({
@@ -51,14 +47,4 @@ export const disconnectWebSocket = () => {
     stompClient.deactivate();
     stompClient = null;
   }
-};
-
-// Add or remove a global listener for incoming messages
-export const addGlobalMessageListener = (listener: (msg: any) => void) => {
-  globalListeners.push(listener);
-};
-
-export const removeGlobalMessageListener = (listener: (msg: any) => void) => {
-  const index = globalListeners.indexOf(listener);
-  if (index > -1) globalListeners.splice(index, 1);
 };
