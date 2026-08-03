@@ -11,7 +11,7 @@ export const connectWebSocket = (
 ) => {
   disconnectWebSocket();
 
-  const socket = new SockJS('http://localhost:8080/ws');
+  const socket = new SockJS('https://nova-chat-backend.onrender.com/ws');
   stompClient = new Client({
     webSocketFactory: () => socket,
     reconnectDelay: 5000,
