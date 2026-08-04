@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://nova-chat-backend.onrender.com';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -59,6 +59,11 @@ const api = {
 
   async updateProfile(userId, data) {
     const response = await axiosInstance.put(`/api/users/${userId}`, data);
+    return response.data;
+  },
+
+  async setPassword(userId, password) {
+    const response = await axiosInstance.post(`/api/users/${userId}/set-password`, { password });
     return response.data;
   },
 
