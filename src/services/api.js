@@ -81,7 +81,11 @@ const api = {
 
   // Chat
   async getChatMessages(roomId) {
-    const response = await axiosInstance.get(`/api/chat/messages/${roomId}`);
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = currentUser.id;
+    const response = await axiosInstance.get(`/api/chat/messages/${roomId}`, {
+      params: { userId }
+    });
     return response.data;
   },
 };
