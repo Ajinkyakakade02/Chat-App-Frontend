@@ -11,17 +11,20 @@ import {
   Stack,
   InputAdornment,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
-import { Phone, ArrowRight, ArrowLeft, ChatCircleDots } from 'phosphor-react';
+import { Phone, ArrowRight, ArrowLeft, ChatCircleDots, Eye, EyeSlash } from 'phosphor-react';
 import { useTheme } from '@mui/material/styles';
 
 const Login = () => {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  const [step, setStep] = useState<'phone' | 'otp' | 'name'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'password' | 'name'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [devOtp, setDevOtp] = useState('');
@@ -56,10 +59,11 @@ const Login = () => {
     setLoading(true);
     try {
       const user = await api.verifyOTP(phoneNumber, otp);
-      if (isDefaultName(user.fullName)) {
-        setVerifiedUser(user);
-        setFullName('');
-        setAbout('');
+      setVerifiedUser(user);
+      // If user has no password, ask them to create one
+      if (!user.hasPassword) {
+        setStep('password');
+      } else if (isDefaultName(user.fullName)) {
         setStep('name');
       } else {
         localStorage.setItem('user', JSON.stringify(user));
@@ -72,6 +76,31 @@ const Login = () => {
     }
   };
 
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    try {
+      // Save password to backend
+      await api.setPassword(verifiedUser.id, password);
+      const updatedUser = { ...verifiedUser, hasPassword: true };
+      if (isDefaultName(updatedUser.fullName)) {
+        setStep('name');
+      } else {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        navigate('/app');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to set password.');
+    } finally {
+      setLoading(false);
+      setPassword('');
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const newName = fullName.trim();
@@ -80,21 +109,19 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    // 1. Immediately update localStorage with the new name
     const updatedUser = {
       ...verifiedUser,
       fullName: newName,
       about: about.trim() || 'Hey there! I am using Chat App',
     };
     localStorage.setItem('user', JSON.stringify(updatedUser));
-    // 2. Try to persist to backend in background
     try {
       await api.updateProfile(verifiedUser.id, {
         fullName: newName,
         about: about.trim() || 'Hey there! I am using Chat App',
       });
     } catch (e) {
-      // ignore – local storage already has the name
+      // ignore
     } finally {
       setLoading(false);
       navigate('/app');
@@ -106,6 +133,7 @@ const Login = () => {
       e.preventDefault();
       if (step === 'phone') handleRequestOtp(e as any);
       else if (step === 'otp') handleVerifyOtp(e as any);
+      else if (step === 'password') handleSetPassword(e as any);
       else if (step === 'name') handleSaveProfile(e as any);
     }
   };
@@ -156,13 +184,15 @@ const Login = () => {
             <ChatCircleDots size={36} color="#fff" weight="fill" />
           </Box>
           <Typography variant="h5" fontWeight={700} textAlign="center">
-            {step === 'phone' ? 'Welcome Back' : step === 'otp' ? 'Enter OTP' : 'Complete Your Profile'}
+            {step === 'phone' ? 'Welcome Back' : step === 'otp' ? 'Enter OTP' : step === 'password' ? 'Create Password' : 'Complete Your Profile'}
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center" mt={0.5}>
             {step === 'phone'
               ? 'Enter your phone number to sign in'
               : step === 'otp'
               ? `We sent a 6‑digit code to ${phoneNumber}`
+              : step === 'password'
+              ? 'Set a password to secure your account'
               : 'Choose a display name for your account'}
           </Typography>
         </Stack>
@@ -179,6 +209,7 @@ const Login = () => {
           </Alert>
         )}
 
+        {/* Step 1: Phone Number */}
         {step === 'phone' && (
           <form onSubmit={handleRequestOtp}>
             <Stack spacing={3}>
@@ -197,6 +228,7 @@ const Login = () => {
           </form>
         )}
 
+        {/* Step 2: OTP */}
         {step === 'otp' && (
           <form onSubmit={handleVerifyOtp}>
             <Stack spacing={3}>
@@ -219,6 +251,34 @@ const Login = () => {
           </form>
         )}
 
+        {/* Step 3: Set Password (new users) */}
+        {step === 'password' && (
+          <form onSubmit={handleSetPassword}>
+            <Stack spacing={3}>
+              <TextField fullWidth label="Create Password" type={showPassword ? 'text' : 'password'}
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown} placeholder="Min 6 characters" required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <EyeSlash /> : <Eye />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              />
+              <Button type="submit" variant="contained" size="large" disabled={loading || password.length < 6}
+                endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight />}
+                sx={{ borderRadius: 2, py: 1.5, fontWeight: 600, fontSize: '1rem', textTransform: 'none' }}>
+                {loading ? 'Setting Password...' : 'Continue'}
+              </Button>
+            </Stack>
+          </form>
+        )}
+
+        {/* Step 4: Choose Name */}
         {step === 'name' && (
           <form onSubmit={handleSaveProfile}>
             <Stack spacing={3}>
@@ -236,14 +296,6 @@ const Login = () => {
                 endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight />}
                 sx={{ borderRadius: 2, py: 1.5, fontWeight: 600, fontSize: '1rem', textTransform: 'none' }}>
                 {loading ? 'Saving...' : 'Continue'}
-              </Button>
-              <Button variant="text" onClick={() => {
-                if (verifiedUser) {
-                  localStorage.setItem('user', JSON.stringify(verifiedUser));
-                  navigate('/app');
-                }
-              }} sx={{ textTransform: 'none', fontWeight: 500 }}>
-                Skip (keep default name)
               </Button>
             </Stack>
           </form>
