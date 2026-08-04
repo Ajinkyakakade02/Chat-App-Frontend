@@ -32,12 +32,12 @@ const Login = () => {
     try {
       const digitsOnly = phoneNumber.replace(/\D/g, '');
       if (digitsOnly.length !== 10) {
-        setError('Phone number must be exactly 10 digits');
+        setError('Phone number must start with 9, 8, or 7');
         setLoading(false);
         return;
       }
       if (!/^[987]/.test(digitsOnly)) {
-        setError('Phone number must be correct');
+        setError('Phone number must be start');
         setLoading(false);
         return;
       }
@@ -140,7 +140,7 @@ const Login = () => {
             <Stack spacing={3}>
               <TextField fullWidth label="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="Enter 10-digit number" required
                 InputProps={{ startAdornment: (<InputAdornment position="start"><Typography sx={{ fontWeight: 600, mr: 1 }}>+91</Typography></InputAdornment>) }}
-                helperText="Must start with 9, 8, or 7" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                helperText="Enter correct Number" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
               <Button type="submit" variant="contained" size="large" disabled={loading}
                 endIcon={<ArrowRight />} sx={{ borderRadius: 2, py: 1.5, fontWeight: 600, fontSize: '1rem', textTransform: 'none' }}>
                 {loading ? 'Checking...' : 'Continue'}
