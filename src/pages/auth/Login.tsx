@@ -37,7 +37,7 @@ const Login = () => {
         return;
       }
       if (!/^[987]/.test(digitsOnly)) {
-        setError('Phone number must start with 9, 8, or 7');
+        setError('Phone number must be correct');
         setLoading(false);
         return;
       }
