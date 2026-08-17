@@ -79,6 +79,17 @@ const api = {
     return response.data;
   },
 
+  // Forgot Password
+  async forgotPassword(phoneNumber, email) {
+    const response = await axiosInstance.post('/api/users/forgot-password', { phoneNumber, email });
+    return response.data;
+  },
+
+  async resetPassword(phoneNumber, otp, newPassword) {
+    const response = await axiosInstance.post('/api/users/reset-password', { phoneNumber, otp, newPassword });
+    return response.data;
+  },
+
   // Chat
   async getChatMessages(roomId) {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
