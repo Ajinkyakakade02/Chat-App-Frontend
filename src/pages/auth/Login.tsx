@@ -12,7 +12,7 @@ import { useTheme } from '@mui/material/styles';
 const Login = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [step, setStep] = useState<'login' | 'forgot' | 'otp' | 'reset'>('login');
+  const [step, setStep] = useState<'login' | 'forgot' | 'otp'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +22,6 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Normal Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -39,15 +38,20 @@ const Login = () => {
     }
   };
 
-  // Forgot Password - Send OTP
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
     try {
-      await api.forgotPassword(email);
-      setSuccess('OTP sent to your email');
+      const response = await api.forgotPassword(email);
+      
+      if (response.otp) {
+        setSuccess(`OTP sent! Your code is: ${response.otp}`);
+      } else {
+        setSuccess('OTP sent to your email');
+      }
+      
       setStep('otp');
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to send OTP');
@@ -56,14 +60,13 @@ const Login = () => {
     }
   };
 
-  // Reset Password with OTP
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       await api.resetPassword(email, otp, newPassword);
-      setSuccess('Password reset successfully. Please login.');
+      setSuccess('Password reset successfully! Please login.');
       setStep('login');
       setPassword('');
       setOtp('');
@@ -83,7 +86,7 @@ const Login = () => {
             <ChatCircleDots size={36} color="#fff" weight="fill" />
           </Box>
           <Typography variant="h5" fontWeight={700}>
-            {step === 'login' ? 'Welcome Back' : step === 'forgot' ? 'Forgot Password' : step === 'otp' ? 'Enter OTP' : 'Reset Password'}
+            {step === 'login' ? 'Welcome Back' : step === 'forgot' ? 'Forgot Password' : 'Reset Password'}
           </Typography>
           <Typography variant="body2" color="text.secondary" mt={0.5}>
             {step === 'login' ? 'Sign in with your email and password' : ''}
@@ -93,7 +96,7 @@ const Login = () => {
         {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{success}</Alert>}
 
-        {/* Login */}
+        {/* Login Step */}
         {step === 'login' && (
           <form onSubmit={handleLogin}>
             <Stack spacing={3}>
@@ -117,7 +120,7 @@ const Login = () => {
           </form>
         )}
 
-        {/* Forgot Password */}
+        {/* Forgot Password Step */}
         {step === 'forgot' && (
           <form onSubmit={handleForgotPassword}>
             <Stack spacing={3}>
@@ -133,7 +136,7 @@ const Login = () => {
           </form>
         )}
 
-        {/* Enter OTP */}
+        {/* Reset Password Step */}
         {step === 'otp' && (
           <form onSubmit={handleResetPassword}>
             <Stack spacing={3}>
