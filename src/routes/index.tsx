@@ -18,6 +18,12 @@ const Loadable = (Component) => (props) => {
   );
 };
 
+// Authentication check
+const isAuthenticated = () => {
+  const user = localStorage.getItem('user');
+  return !!user;
+};
+
 export default function Router() {
   return useRoutes([
     {
@@ -34,20 +40,23 @@ export default function Router() {
       path: "/",
       element: <DashboardLayout />,
       children: [
-        { element: <Navigate to={DEFAULT_PATH} replace />, index: true },
-        { path: "app", element: <GeneralApp /> },
-        { path: "settings", element: <Settings /> },
-        { path: "group", element: <GroupPage /> },
-        { path: "call", element: <CallPage /> },
-        { path: "profile", element: <ProfilePage /> },
-        { path: "user/:userId", element: <UserProfilePage /> },   // ✅ fixed
+        { 
+          element: isAuthenticated() ? <Navigate to={DEFAULT_PATH} replace /> : <Navigate to="/auth/login" replace />, 
+          index: true 
+        },
+        { path: "app", element: isAuthenticated() ? <GeneralApp /> : <Navigate to="/auth/login" replace /> },
+        { path: "settings", element: isAuthenticated() ? <Settings /> : <Navigate to="/auth/login" replace /> },
+        { path: "group", element: isAuthenticated() ? <GroupPage /> : <Navigate to="/auth/login" replace /> },
+        { path: "call", element: isAuthenticated() ? <CallPage /> : <Navigate to="/auth/login" replace /> },
+        { path: "profile", element: isAuthenticated() ? <ProfilePage /> : <Navigate to="/auth/login" replace /> },
+        { path: "user/:userId", element: isAuthenticated() ? <UserProfilePage /> : <Navigate to="/auth/login" replace /> },
         { path: "404", element: <Page404 /> },
         { path: "*", element: <Navigate to="/404" replace /> },
       ],
     },
     {
       path: '/chat/:chatId',
-      element: <ChatLayout />,
+      element: isAuthenticated() ? <ChatLayout /> : <Navigate to="/auth/login" replace />,
     },
     { path: "*", element: <Navigate to="/404" replace /> },
   ]);
@@ -63,6 +72,6 @@ const NewPasswordPage = Loadable(lazy(() => import("../pages/auth/NewPassword"))
 const GroupPage = Loadable(lazy(() => import("../pages/dashboard/Group")));
 const Settings = Loadable(lazy(() => import("../pages/dashboard/Settings")));
 const CallPage = Loadable(lazy(() => import("../pages/dashboard/Call")));
-const ProfilePage = Loadable(lazy(() => import("../pages/dashboard/Profile")));   // own profile
-const UserProfilePage = Loadable(lazy(() => import("../pages/UserProfile")));    // other user's profile ✅
+const ProfilePage = Loadable(lazy(() => import("../pages/dashboard/Profile")));
+const UserProfilePage = Loadable(lazy(() => import("../pages/UserProfile")));
 const Page404 = Loadable(lazy(() => import("../pages/Page404")));
