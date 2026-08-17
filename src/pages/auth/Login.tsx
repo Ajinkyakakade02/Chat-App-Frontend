@@ -6,17 +6,16 @@ import {
   Box, Button, TextField, Typography, Alert, Stack,
   InputAdornment, CircularProgress, IconButton,
 } from '@mui/material';
-import { Lock, ChatCircleDots, Eye, EyeSlash, ArrowRight, Phone } from 'phosphor-react';
+import { Lock, ChatCircleDots, Eye, EyeSlash, ArrowRight, Envelope } from 'phosphor-react';
 import { useTheme } from '@mui/material/styles';
 
 const Login = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [step, setStep] = useState<'login' | 'forgot' | 'otp' | 'reset'>('login');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,32 +28,25 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      const digitsOnly = phoneNumber.replace(/\D/g, '');
-      const fullNumber = `+91${digitsOnly}`;
-      const user = await api.login(fullNumber, password);
+      const user = await api.login(email, password);
       localStorage.setItem('user', JSON.stringify(user));
-      
-      // 👇 ADD THIS LINE - Set session expiry to 24 hours from now
       localStorage.setItem('session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
-      
       navigate('/app');
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Invalid phone or password');
+      setError(err?.response?.data?.error || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
-  // Forgot Password - Step 1: Send OTP to email
+  // Forgot Password - Send OTP
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
     try {
-      const digitsOnly = phoneNumber.replace(/\D/g, '');
-      const fullNumber = `+91${digitsOnly}`;
-      await api.forgotPassword(fullNumber, email);
+      await api.forgotPassword(email);
       setSuccess('OTP sent to your email');
       setStep('otp');
     } catch (err: any) {
@@ -64,15 +56,13 @@ const Login = () => {
     }
   };
 
-  // Forgot Password - Step 2: Reset password with OTP
+  // Reset Password with OTP
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const digitsOnly = phoneNumber.replace(/\D/g, '');
-      const fullNumber = `+91${digitsOnly}`;
-      await api.resetPassword(fullNumber, otp, newPassword);
+      await api.resetPassword(email, otp, newPassword);
       setSuccess('Password reset successfully. Please login.');
       setStep('login');
       setPassword('');
@@ -96,19 +86,19 @@ const Login = () => {
             {step === 'login' ? 'Welcome Back' : step === 'forgot' ? 'Forgot Password' : step === 'otp' ? 'Enter OTP' : 'Reset Password'}
           </Typography>
           <Typography variant="body2" color="text.secondary" mt={0.5}>
-            {step === 'login' ? 'Sign in with your phone and password' : ''}
+            {step === 'login' ? 'Sign in with your email and password' : ''}
           </Typography>
         </Stack>
 
         {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{success}</Alert>}
 
-        {/* Step 1: Login */}
+        {/* Login */}
         {step === 'login' && (
           <form onSubmit={handleLogin}>
             <Stack spacing={3}>
-              <TextField fullWidth label="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="Enter 10-digit number" required
-                InputProps={{ startAdornment: (<InputAdornment position="start"><Typography sx={{ fontWeight: 600, mr: 1 }}>+91</Typography></InputAdornment>) }}
+              <TextField fullWidth label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required
+                InputProps={{ startAdornment: (<InputAdornment position="start"><Envelope size={20} /></InputAdornment>) }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
               <TextField fullWidth label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required
                 InputProps={{
@@ -127,14 +117,12 @@ const Login = () => {
           </form>
         )}
 
-        {/* Step 2: Forgot Password - Enter Phone + Email */}
+        {/* Forgot Password */}
         {step === 'forgot' && (
           <form onSubmit={handleForgotPassword}>
             <Stack spacing={3}>
-              <TextField fullWidth label="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="Enter your phone number" required
-                InputProps={{ startAdornment: (<InputAdornment position="start"><Typography sx={{ fontWeight: 600, mr: 1 }}>+91</Typography></InputAdornment>) }}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
               <TextField fullWidth label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your registered email" required
+                InputProps={{ startAdornment: (<InputAdornment position="start"><Envelope size={20} /></InputAdornment>) }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
               <Button type="submit" variant="contained" size="large" disabled={loading}
                 endIcon={<ArrowRight />} sx={{ borderRadius: 2, py: 1.5, fontWeight: 600, fontSize: '1rem', textTransform: 'none' }}>
@@ -145,7 +133,7 @@ const Login = () => {
           </form>
         )}
 
-        {/* Step 3: Enter OTP */}
+        {/* Enter OTP */}
         {step === 'otp' && (
           <form onSubmit={handleResetPassword}>
             <Stack spacing={3}>
