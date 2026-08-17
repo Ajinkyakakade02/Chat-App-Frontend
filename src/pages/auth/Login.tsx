@@ -33,6 +33,10 @@ const Login = () => {
       const fullNumber = `+91${digitsOnly}`;
       const user = await api.login(fullNumber, password);
       localStorage.setItem('user', JSON.stringify(user));
+      
+      // 👇 ADD THIS LINE - Set session expiry to 24 hours from now
+      localStorage.setItem('session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+      
       navigate('/app');
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Invalid phone or password');
