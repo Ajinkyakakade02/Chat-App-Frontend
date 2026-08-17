@@ -1,31 +1,225 @@
 // @ts-nocheck
-import { Link, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import React from 'react'
-import RegisterForm from '../../sections/auth/RegisterForm';
-import AuthSocial from '../../sections/auth/AuthSocial';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
+import {
+  Box, Button, TextField, Typography, Alert, Stack,
+  InputAdornment, CircularProgress, IconButton,
+} from '@mui/material';
+import { Lock, ChatCircleDots, Eye, EyeSlash, ArrowRight, Phone, User } from 'phosphor-react';
+import { useTheme } from '@mui/material/styles';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validate phone number
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    if (digitsOnly.length !== 10) {
+      setError('Phone number must be exactly 10 digits');
+      return;
+    }
+    if (!/^[987]/.test(digitsOnly)) {
+      setError('Phone number must start with 9, 8, or 7');
+      return;
+    }
+
+    // Validate password
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    const fullNumber = `+91${digitsOnly}`;
+    setLoading(true);
+
+    try {
+      const user = await api.register(fullName, '', fullNumber, password);
+      localStorage.setItem('user', JSON.stringify(user));
+      // Set session expiry to 24 hours
+      localStorage.setItem('session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+      navigate('/app');
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Stack spacing={2} sx={{mb:5, position:'relative'}}>
-        <Typography variant='h4'>
-            Get Started With WeChat
-        </Typography>
-        <Stack direction={'row'} spacing={0.5}>
-            <Typography variant='body2'>Allready have an account?</Typography>
-            <Link component={RouterLink} to='/auth/login' variant='subtitle2'>Sign in</Link>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: theme.palette.mode === 'dark'
+          ? 'linear-gradient(135deg, #0A0B0F 0%, #1A1C20 100%)'
+          : 'linear-gradient(135deg, #F5F7FA 0%, #E8ECF1 100%)',
+        p: 2,
+      }}
+    >
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: 420,
+          p: 4,
+          borderRadius: 4,
+          background: theme.palette.mode === 'dark'
+            ? 'rgba(255,255,255,0.04)'
+            : 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(24px)',
+          border: `1px solid ${theme.palette.divider}`,
+          boxShadow: 3,
+        }}
+      >
+        <Stack alignItems="center" mb={4}>
+          <Box
+            sx={{
+              width: 72,
+              height: 72,
+              borderRadius: 3,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 2,
+              boxShadow: `0 8px 24px ${theme.palette.primary.main}40`,
+            }}
+          >
+            <ChatCircleDots size={36} color="#fff" weight="fill" />
+          </Box>
+          <Typography variant="h5" fontWeight={700}>
+            Create Account
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
+            Join NovaChat and start chatting
+          </Typography>
         </Stack>
-        {/* Register Form */}
-        <RegisterForm/>
 
-        <Typography component={'div'} sx={{color:'text.secondary', mt:3, typography:'caption'
-    ,textAlign:'center'}}>{'By signining up, I agree to '}
-    <Link underline='always' color='text.primary'>Terms of service</Link>{' and '}
-    <Link underline='always' color='text.primary'>Privacy policy</Link>
-    </Typography>
-    <AuthSocial/>
-    </Stack>
-  )
-}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-export default Register
+        <form onSubmit={handleRegister}>
+          <Stack spacing={3}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter your name"
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <User size={20} color={theme.palette.text.secondary} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+
+            <TextField
+              fullWidth
+              label="Phone Number"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="Enter 10-digit number"
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Typography sx={{ fontWeight: 600, mr: 1 }}>+91</Typography>
+                    <Phone size={20} color={theme.palette.text.secondary} />
+                  </InputAdornment>
+                ),
+              }}
+              helperText="Must start with 9, 8, or 7"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+
+            <TextField
+              fullWidth
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min 6 characters"
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock size={20} color={theme.palette.text.secondary} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                      {showPassword ? <EyeSlash /> : <Eye />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={loading}
+              endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight />}
+              sx={{
+                borderRadius: 2,
+                py: 1.5,
+                fontWeight: 600,
+                fontSize: '1rem',
+                textTransform: 'none',
+              }}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </Stack>
+        </form>
+
+        <Typography variant="body2" color="text.secondary" textAlign="center" mt={3}>
+          Already have an account?{' '}
+          <Link
+            to="/auth/login"
+            style={{
+              color: theme.palette.primary.main,
+              textDecoration: 'none',
+              fontWeight: 600,
+            }}
+          >
+            Sign In
+          </Link>
+        </Typography>
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          textAlign="center"
+          sx={{ display: 'block', mt: 2 }}
+        >
+          By signing up, you agree to our Terms of Service and Privacy Policy
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+
+export default Register;
