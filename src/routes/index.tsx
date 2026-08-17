@@ -18,10 +18,21 @@ const Loadable = (Component) => (props) => {
   );
 };
 
-// Authentication check
+// Authentication check with session timeout
 const isAuthenticated = () => {
   const user = localStorage.getItem('user');
-  return !!user;
+  const token = localStorage.getItem('token');
+  const expiry = localStorage.getItem('session_expiry');
+  
+  if (!user || !token) return false;
+  
+  if (expiry && Date.now() > parseInt(expiry)) {
+    // Session expired - clear everything
+    localStorage.clear();
+    return false;
+  }
+  
+  return true;
 };
 
 export default function Router() {
