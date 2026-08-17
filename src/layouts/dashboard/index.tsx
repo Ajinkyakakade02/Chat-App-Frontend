@@ -9,7 +9,6 @@ const isAuthenticated = () => {
 };
 
 const DashboardLayout = () => {
-
   if (!isAuthenticated()) {
     return <Navigate to='/auth/login' replace />;
   }
