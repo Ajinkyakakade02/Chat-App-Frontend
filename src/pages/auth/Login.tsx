@@ -45,13 +45,15 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await api.forgotPassword(email);
-      
-      if (response.otp) {
-        setSuccess(`OTP sent! Your code is: ${response.otp}`);
+
+      if (response.emailSent) {
+        // Email sent successfully – do not reveal OTP
+        setSuccess('OTP sent to your email. Please check your inbox.');
       } else {
-        setSuccess('OTP sent to your email');
+        // Email failed – show OTP as fallback for testing
+        setSuccess(`OTP sent! Your code is: ${response.otp}`);
       }
-      
+
       setStep('otp');
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to send OTP');
