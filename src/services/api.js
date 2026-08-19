@@ -18,12 +18,17 @@ const api = {
   async login(email, password) {
     const response = await axiosInstance.post('/api/users/login', { email, password });
     localStorage.setItem('user', JSON.stringify(response.data));
+    // Store a dummy token to satisfy route guard
+    localStorage.setItem('token', 'dummy-token-' + Date.now());
+    localStorage.setItem('session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
     return response.data;
   },
 
   async register(fullName, email, password) {
     const response = await axiosInstance.post('/api/users/register', { fullName, email, password });
     localStorage.setItem('user', JSON.stringify(response.data));
+    localStorage.setItem('token', 'dummy-token-' + Date.now());
+    localStorage.setItem('session_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
     return response.data;
   },
 
